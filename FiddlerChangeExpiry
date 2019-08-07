@@ -1,0 +1,35 @@
+In Fiddler goto Rules->Customize Rules, find "static function OnBeforeResponse(oSession: Session)" and add the snippet below the existing code:
+
+if (oSession.PathAndQuery.Contains("WebTicket/WebTicketService.svc")) {
+
+			if (oSession.responseCode == 200)
+			{
+				var value = System.Text.Encoding.UTF8.GetString(oSession.ResponseBody); 
+			
+        // Replace all instances of the expires tag with 6 minutes from current.
+				// you can scope it as much as you like by leveraging https://regexr.com/ 
+        var oRegEx = /(<Expires).*>.*<\/Expires>/g;
+								
+				var newExpiresDate = DateTime.UtcNow.AddMinutes(6);
+        
+        // In this case the original Expires time was in ISO format hence this was needed. 
+				var newExpiresDateStr = newExpiresDate.ToString("o");
+		
+	    	var newExpires = "<Expires xmlns=\x22http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\x22>"+newExpiresDateStr+"</Expires>"
+
+				value = value.replace(oRegEx, newExpires);
+				
+        // This is good practice so you can identify the modified responses quickly in Fiddler.
+        oSession.oResponse.headers.Add("Response-Modified-By", "FiddlerCustomRule"); 
+
+				// In this case there were two expires tag so modifying the other one as well
+				var oRegExCert = /<Lifetime><u:Created>.*<\/u:Created><u:Expires>.*<\/u:Expires><\/Lifetime>/g;
+				
+				var newExpiresCert = "<Lifetime><u:Created>" + DateTime.UtcNow.ToString("o") + "</u:Created><u:Expires>" + newExpiresDateStr + "</u:Expires></Lifetime>";
+				
+				value = value.replace(oRegExCert, newExpiresCert);
+				
+				oSession.ResponseBody = System.Text.Encoding.UTF8.GetBytes(value);
+			}
+}
+
