@@ -1,4 +1,5 @@
-In Fiddler goto Rules->Customize Rules, find "static function OnBeforeResponse(oSession: Session)" and add the snippet below the existing code:
+In Fiddler goto Rules->Customize Rules, find "static function OnBeforeResponse(oSession: Session)" and 
+add the snippet below the existing code:
 
 if (oSession.PathAndQuery.Contains("WebTicket/WebTicketService.svc")) 
 {
